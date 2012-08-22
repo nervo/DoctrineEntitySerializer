@@ -1,0 +1,5 @@
+{
+    "name": "nervo/doctrine-entity-serializer",
+    "description": "Doctrine entity serializer.",
+    "keywords": ["doctrine","serializer"]
+}
