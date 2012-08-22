@@ -1,5 +1,22 @@
 {
     "name": "nervo/doctrine-entity-serializer",
+    "type": "library",
     "description": "Doctrine entity serializer.",
-    "keywords": ["doctrine","serializer"]
+    "keywords": ["doctrine","serializer"],
+    "homepage": "https://github.com/nervo/DoctrineEntitySerializer",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Florian Rey",
+            "email": "nervo@nervo.net"
+        }
+    ],
+    "require": {
+        "doctrine/orm": "2.*",
+        "symfony/serializer": "2.1.*"
+    },
+    "autoload": {
+        "psr-0": { "Nervo\\DoctrineEntitySerializer": "" }
+    },
+    "target-dir": "Nervo/DoctrineEntitySerializer"
 }
