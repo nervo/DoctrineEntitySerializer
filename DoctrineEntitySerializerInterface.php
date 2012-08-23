@@ -8,8 +8,9 @@ interface DoctrineEntitySerializerInterface
 {
     /**
      * Get entity manager
-     * 
+     *
      * @return EntityManager
      */
     public function getEntityManager();
 }
+

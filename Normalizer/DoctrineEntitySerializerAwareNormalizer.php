@@ -2,7 +2,8 @@
 
 namespace Nervo\DoctrineEntitySerializer\Normalizer;
 
-use Symfony\Component\Serializer\Normalizer\SerializerAwareNormalizer;
+use Nervo\DoctrineEntitySerializer\DoctrineEntitySerializerAwareInterface;
+use Nervo\DoctrineEntitySerializer\DoctrineEntitySerializerInterface;
 
 abstract class DoctrineEntitySerializerAwareNormalizer implements DoctrineEntitySerializerAwareInterface
 {
@@ -10,7 +11,7 @@ abstract class DoctrineEntitySerializerAwareNormalizer implements DoctrineEntity
      * @var DoctrineEntitySerializerInterface
      */
     protected $serializer;
-    
+
     /**
      * {@inheritdoc}
      */
@@ -18,4 +19,13 @@ abstract class DoctrineEntitySerializerAwareNormalizer implements DoctrineEntity
     {
         $this->serializer = $serializer;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getEntityManager()
+    {
+        return $this->serializer->getEntityManager();
+    }
 }
+

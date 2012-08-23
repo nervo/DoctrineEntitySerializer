@@ -2,21 +2,31 @@
 
 namespace Nervo\DoctrineEntitySerializer\Normalizer;
 
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\NormalizableInterface;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\DenormalizableInterface;
+use Nervo\DoctrineEntitySerializer\Normalizer\DoctrineEntityNormalizableInterface;
+use Nervo\DoctrineEntitySerializer\Normalizer\DoctrineEntityNormalizerInterface;
+use Nervo\DoctrineEntitySerializer\Normalizer\DoctrineEntityDenormalizableInterface;
+use Nervo\DoctrineEntitySerializer\Normalizer\DoctrineEntityDenormalizerInterface;
 
-abstract class DoctrineEntityCustomNormalizer extends DoctrineEntitySerializerAwareNormalizer  implements NormalizerInterface, DenormalizerInterface
+use Doctrine\ORM\Mapping\MappingException;
+
+class DoctrineEntityCustomNormalizer extends DoctrineEntitySerializerAwareNormalizer implements DoctrineEntityNormalizerInterface, DoctrineEntityDenormalizerInterface
 {
-    protected $normalizerClassMetadataCache = array();
-    
+    protected $classMetadataCache = array();
+
     /**
      * {@inheritdoc}
      */
     public function normalize($object, $format = null)
     {
-        return $object->normalize($this->serializer, $format);
+        $data = $object->normalize($this->serializer, $format);
+
+        $classMetadata = $this->classMetadataCache[get_class($object)][$format];
+
+        if (!$classMetadata->isInheritanceTypeNone()) {
+            $data[$classMetadata->discriminatorColumn['name']] = $classMetadata->discriminatorValue;
+        }
+
+        return $data;
     }
 
     /**
@@ -24,61 +34,68 @@ abstract class DoctrineEntityCustomNormalizer extends DoctrineEntitySerializerAw
      */
     public function denormalize($data, $class, $format = null)
     {
+        $classMetadata = $this->classMetadataCache[$class][$format];
+
+        if (!$classMetadata->isInheritanceTypeNone()) {
+            $discriminatorColumnName = $classMetadata->discriminatorColumn['name'];
+
+            if (isset($data[$discriminatorColumnName]) && isset($classMetadata->discriminatorMap[$data[$discriminatorColumnName]])) {
+                $class = $classMetadata->discriminatorMap[$data[$discriminatorColumnName]];
+            }
+        }
+
         $object = new $class;
         $object->denormalize($this->serializer, $data, $format);
 
         return $object;
     }
-    
+
     /**
-     * Checks if the given class implements the NormalizableInterface.
-     *
-     * @param mixed  $data   Data to normalize.
-     * @param string $format The format being (de-)serialized from or into.
-     * @return Boolean
+     * {@inheritdoc}
      */
     public function supportsNormalization($data, $format = null)
     {
         $class = get_class($data);
-        
-        if (isset($this->normalizerClassMetadataCache[$class][$format])) {
-            return (boolean) $this->normalizerClassMetadataCache[$class][$format];
+
+        if (isset($this->classMetadataCache[$class][$format])) {
+            return (boolean) $this->classMetadataCache[$class][$format];
         }
-        
-        if ($data instanceof NormalizableInterface) {
-            $this->normalizerClassMetadataCache[$class][$format] = $this->serializer->getEntityManager()->getClassMetadata($class);
+
+        if ($data instanceof DoctrineEntityNormalizableInterface) {
+            try {
+                $this->classMetadataCache[$class][$format] = $this->serializer->getEntityManager()->getClassMetadata($class);
+            } catch (MappingException $e) {
+                $this->classMetadataCache[$class][$format] = null;
+            }
         } else {
-            $this->normalizerClassMetadataCache[$class][$format] = null;
+            $this->classMetadataCache[$class][$format] = null;
         }
-        
-        return (boolean) $this->normalizerClassMetadataCache[$class][$format];;
+
+        return (boolean) $this->classMetadataCache[$class][$format];
     }
-    
+
     /**
      * {@inheritdoc}
      */
-    
-    /*
     public function supportsDenormalization($data, $type, $format = null)
     {
+        if (isset($this->classMetadataCache[$type][$format])) {
+            return (boolean) $this->classMetadataCache[$type][$format];
+        }
+
         $class = new \ReflectionClass($type);
 
-        return $class->isSubclassOf('Symfony\Component\Serializer\Normalizer\DenormalizableInterface');
-    }
-    */
-    
-    /**
-     * Checks if the given class implements the NormalizableInterface.
-     *
-     * @param mixed  $data   Data to denormalize from.
-     * @param string $type   The class to which the data should be denormalized.
-     * @param string $format The format being deserialized from.
-     * @return Boolean
-     */
-    public function supportsDenormalization($data, $type, $format = null)
-    {
-        $class = new \ReflectionClass($type);
+        if ($class->isSubclassOf('Nervo\DoctrineEntitySerializer\Normalizer\DoctrineEntityDenormalizableInterface')) {
+            try {
+                $this->classMetadataCache[$type][$format] = $this->serializer->getEntityManager()->getClassMetadata($type);
+            } catch (MappingException $e) {
+                $this->classMetadataCache[$type][$format] = null;
+            }
+        } else {
+            $this->classMetadataCache[$type][$format] = null;
+        }
 
-        return $class->isSubclassOf('Symfony\Component\Serializer\Normalizer\DenormalizableInterface');
+        return (boolean) $this->classMetadataCache[$type][$format];
     }
 }
+

@@ -10,4 +10,12 @@ interface DoctrineEntitySerializerAwareInterface
      * @param DoctrineEntitySerializerInterface $serializer
      */
     public function setSerializer(DoctrineEntitySerializerInterface $serializer);
+
+    /**
+     * Gets entity manager
+     *
+     * @param Doctrine\ORM\EntityManager
+     */
+    public function getEntityManager();
 }
+
